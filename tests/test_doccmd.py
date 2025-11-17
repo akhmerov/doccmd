@@ -3928,3 +3928,175 @@ def test_continue_on_error_vs_default_behavior(tmp_path: Path) -> None:
         result_with_continue.stdout,
         result_with_continue.stderr,
     )
+
+
+def test_myst_code_cell_directive(tmp_path: Path) -> None:
+    """
+    MyST code-cell directive is recognized and processed.
+    """
+    runner = CliRunner()
+    myst_file = tmp_path / "example.md"
+    content = textwrap.dedent(
+        text="""\
+        # Test Code Cell
+
+        ```{code-cell} python
+        x = 1 + 1
+        print(x)
+        ```
+        """,
+    )
+    myst_file.write_text(data=content, encoding="utf-8")
+    arguments = [
+        "--language",
+        "python",
+        "--command",
+        "cat",
+        str(object=myst_file),
+    ]
+    result = runner.invoke(
+        cli=main,
+        args=arguments,
+        catch_exceptions=False,
+        color=True,
+    )
+    assert result.exit_code == 0, (result.stdout, result.stderr)
+    # The file is padded to match line numbers (code starts on line 3)
+    expected_output = textwrap.dedent(
+        text="""\
+
+
+
+x = 1 + 1
+print(x)
+        """,
+    )
+    assert result.stdout == expected_output
+    assert result.stderr == ""
+
+
+def test_myst_code_cell_and_code_block(tmp_path: Path) -> None:
+    """
+    Both code-cell and code-block directives are recognized in the same file.
+    """
+    runner = CliRunner()
+    myst_file = tmp_path / "example.md"
+    content = textwrap.dedent(
+        text="""\
+        # Test Both Directives
+
+        ```{code-cell} python
+        x = 1 + 1
+        ```
+
+        ```{code-block} python
+        y = 2 + 2
+        ```
+        """,
+    )
+    myst_file.write_text(data=content, encoding="utf-8")
+    arguments = [
+        "--language",
+        "python",
+        "--command",
+        "cat",
+        str(object=myst_file),
+    ]
+    result = runner.invoke(
+        cli=main,
+        args=arguments,
+        catch_exceptions=False,
+        color=True,
+    )
+    assert result.exit_code == 0, (result.stdout, result.stderr)
+    # Both code blocks should be processed
+    assert "x = 1 + 1" in result.stdout
+    assert "y = 2 + 2" in result.stdout
+    assert result.stderr == ""
+
+
+def test_myst_code_cell_skip(tmp_path: Path) -> None:
+    """
+    Code-cell directives can be skipped using skip markers.
+    """
+    runner = CliRunner()
+    myst_file = tmp_path / "example.md"
+    content = textwrap.dedent(
+        text="""\
+        # Test Skipping Code Cell
+
+        % skip doccmd[all]: next
+
+        ```{code-cell} python
+        x = 1 + 1
+        ```
+
+        ```{code-cell} python
+        y = 2 + 2
+        ```
+        """,
+    )
+    myst_file.write_text(data=content, encoding="utf-8")
+    arguments = [
+        "--language",
+        "python",
+        "--command",
+        "cat",
+        str(object=myst_file),
+    ]
+    result = runner.invoke(
+        cli=main,
+        args=arguments,
+        catch_exceptions=False,
+        color=True,
+    )
+    assert result.exit_code == 0, (result.stdout, result.stderr)
+    # Only the second code block should be processed
+    assert "x = 1 + 1" not in result.stdout
+    assert "y = 2 + 2" in result.stdout
+    assert result.stderr == ""
+
+
+def test_myst_code_cell_group(tmp_path: Path) -> None:
+    """
+    Code-cell directives can be grouped together.
+    """
+    runner = CliRunner()
+    myst_file = tmp_path / "example.md"
+    content = textwrap.dedent(
+        text="""\
+        # Test Grouping Code Cells
+
+        % group doccmd[all]: start
+
+        ```{code-cell} python
+        def my_function():
+            return 42
+        ```
+
+        ```{code-cell} python
+        result = my_function()
+        ```
+
+        % group doccmd[all]: end
+        """,
+    )
+    myst_file.write_text(data=content, encoding="utf-8")
+    arguments = [
+        "--language",
+        "python",
+        "--command",
+        "cat",
+        str(object=myst_file),
+    ]
+    result = runner.invoke(
+        cli=main,
+        args=arguments,
+        catch_exceptions=False,
+        color=True,
+    )
+    assert result.exit_code == 0, (result.stdout, result.stderr)
+    # Both code blocks should be in the output as one grouped block
+    assert "def my_function():" in result.stdout
+    assert "result = my_function()" in result.stdout
+    assert result.stderr == ""
