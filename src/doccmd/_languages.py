@@ -21,6 +21,8 @@ from beartype import beartype
 from sybil import Document, Region
 from sybil.typing import Evaluator
 
+from ._parsers import MystCodeBlockParser
+
 
 @runtime_checkable
 class _SphinxJinja2Parser(Protocol):
@@ -143,7 +145,7 @@ MYST = MarkupLanguage(
     skip_parser_cls=(
         sybil_extras.parsers.myst.custom_directive_skip.CustomDirectiveSkipParser
     ),
-    code_block_parser_cls=sybil.parsers.myst.CodeBlockParser,
+    code_block_parser_cls=MystCodeBlockParser,
     group_parser_cls=sybil_extras.parsers.myst.grouped_source.GroupedSourceParser,
     sphinx_jinja_parser_cls=sybil_extras.parsers.myst.sphinx_jinja2.SphinxJinja2Parser,
 )
