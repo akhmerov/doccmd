@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 import sybil.parsers.markdown
-import sybil.parsers.myst
 import sybil.parsers.rest
 import sybil_extras.parsers.markdown.custom_directive_skip
 import sybil_extras.parsers.markdown.grouped_source

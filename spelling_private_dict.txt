@@ -44,3 +44,5 @@ ubuntu
 validator
 validators
 versioned
+Jupyter
+sybil
